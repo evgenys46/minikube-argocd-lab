@@ -13,7 +13,7 @@ variable "replicas" {
 variable "image_name" {
   description = "Docker image name and tag for the web API"
   type        = string
-  default     = "web-api:v4"
+  default     = "evgenys46/cibus-demo-api:latest"
 }
 
 variable "ingress_host" {
