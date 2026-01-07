@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: "https://github.com/evgenys46/minikube-argocd-lab.git"
-    targetRevision: main
+    targetRevision: main-2
     path: k8s
   destination:
     server: https://kubernetes.default.svc
