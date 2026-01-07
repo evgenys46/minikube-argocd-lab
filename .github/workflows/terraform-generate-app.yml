@@ -1,13 +1,10 @@
-name: Docker - Build and Update Deployment
+name: Terraform - Generate Manifests
 
 on:
   workflow_dispatch:
 
-env:
-  DOCKER_IMAGE: evgenys46/cibus-demo-api
-
 jobs:
-  build-and-update:
+  generate-manifests:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,70 +14,70 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          terraform_version: 1.6.0
 
-      - name: Extract commit SHA (short)
-        id: vars
-        run: echo "short_sha=$(echo ${{ github.sha }} | cut -c1-7)" >> $GITHUB_OUTPUT
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./app
-          push: true
-          tags: |
-            ${{ env.DOCKER_IMAGE }}:${{ steps.vars.outputs.short_sha }}
-            ${{ env.DOCKER_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Update deployment.yaml with new image
+      - name: Terraform Init
         run: |
-          # Update the image tag in deployment.yaml
-          sed -i "s|image: ${{ env.DOCKER_IMAGE }}:.*|image: ${{ env.DOCKER_IMAGE }}:${{ steps.vars.outputs.short_sha }}|g" k8s/deployment.yaml
+          cd terraform
+          terraform init
 
-          echo "Updated k8s/deployment.yaml"
+      - name: Terraform Validate
+        run: |
+          cd terraform
+          terraform validate
+
+      - name: Terraform Plan
+        run: |
+          cd terraform
+          terraform plan
+
+      - name: Terraform Apply
+        run: |
+          cd terraform
+          terraform apply -auto-approve
+
+      - name: Verify generated manifests
+        run: |
+          echo "Generated Kubernetes manifests:"
+          ls -la k8s/
           echo ""
-          echo "New image tag:"
+          echo "Files created:"
+          for file in k8s/*.yaml; do
+            echo "- $(basename $file)"
+          done
+          echo ""
+          echo "Current image in deployment:"
           grep "image:" k8s/deployment.yaml
 
-      - name: Commit and push updated deployment
+      - name: Commit and push manifests
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          git add k8s/deployment.yaml
+          git add k8s/
 
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "ci: update image to ${{ env.DOCKER_IMAGE }}:${{ steps.vars.outputs.short_sha }}"
+            git commit -m "terraform: generate Kubernetes manifests"
             git push
-            echo "Deployment updated and pushed"
+            echo "Manifests pushed to repository"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Summary
         run: |
-          echo "### Docker Image Built and Deployment Updated" >> $GITHUB_STEP_SUMMARY
+          echo "### Terraform Manifests Generated" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "#### Docker Image" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image:** \`${{ env.DOCKER_IMAGE }}:${{ steps.vars.outputs.short_sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Also tagged as:** \`${{ env.DOCKER_IMAGE }}:latest\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Registry:** [Docker Hub](https://hub.docker.com/r/evgenys46/cibus-demo-api)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Commit:** \`${{ steps.vars.outputs.short_sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Generated files in \`k8s/\` directory:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`namespace.yaml\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`deployment.yaml\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`service.yaml\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ingress.yaml\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`tls-secret.yaml\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "#### Deployment Update" >> $GITHUB_STEP_SUMMARY
-          echo "- Updated \`k8s/deployment.yaml\` with new image tag" >> $GITHUB_STEP_SUMMARY
-          echo "- Changes pushed to \`main-2\` branch" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "#### Next Step" >> $GITHUB_STEP_SUMMARY
-          echo "ArgoCD will automatically detect the change in \`k8s/deployment.yaml\` and sync to Minikube" >> $GITHUB_STEP_SUMMARY
+          echo "**Next:** Build Docker image and update deployment" >> $GITHUB_STEP_SUMMARY
