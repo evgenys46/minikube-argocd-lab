@@ -1,18 +1,7 @@
 name: Docker - Build and Update Deployment
 
 on:
-  push:
-    branches:
-      - main-2
-    paths:
-      - "app/**"
-      - ".github/workflows/docker-build-deploy.yml"
-  pull_request:
-    branches:
-      - main-2
-    paths:
-      - "app/**"
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
 
 env:
   DOCKER_IMAGE: evgenys46/cibus-demo-api

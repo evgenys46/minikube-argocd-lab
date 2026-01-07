@@ -1,12 +1,6 @@
 name: Terraform - Generate Component Manifests
 
 on:
-    push:
-        branches:
-            - main-2
-        paths:
-            - "terraform/**"
-            - ".github/workflows/terraform-generate.yml"
     workflow_dispatch:
 
 jobs:
