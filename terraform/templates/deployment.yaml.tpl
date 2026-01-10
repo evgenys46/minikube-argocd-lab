@@ -23,7 +23,7 @@ spec:
       containers:
       - name: web-api
         image: ${image}
-        imagePullPolicy: Never
+        imagePullPolicy: Always
         ports:
         - containerPort: 8000
           protocol: TCP

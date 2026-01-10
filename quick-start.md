@@ -160,6 +160,8 @@ git push
 ```bash
 # Apply ArgoCD Application
 kubectl apply -f argocd/application.yaml
+or
+kubectl apply -f https://raw.githubusercontent.com/evgenys46/minikube-argocd-lab/main-2/argocd/application.yaml
 
 # Watch ArgoCD sync (in separate terminal or ArgoCD UI)
 kubectl get application web-api -n argocd -w
