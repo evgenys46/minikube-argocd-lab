@@ -22,7 +22,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: web-api
-        image: evgenys46/cibus-demo-api:8c2a5da
+        image: evgenys46/cibus-demo-api:aa28348
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
